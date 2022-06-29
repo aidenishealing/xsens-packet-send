@@ -27,6 +27,9 @@ pub async fn old_format() -> AnyhowResult<()> {
 
 
   loop {
+
+    let mut buf = [0; 1024];
+
     match reader.next() {
       Ok((offset, block)) => {
         //println!("got new block");
@@ -41,7 +44,13 @@ pub async fn old_format() -> AnyhowResult<()> {
             // use linktype to parse b.data()
             //println!("Block: {:?}", block)
 
+
+            //let len = sock.recv(&mut buf).await?;
+            //println!("{:?} bytes received from {:?}", len, remote_addr);
+
             let len = sock.send(&block.data).await?;
+
+            println!("Sent: {}", len);
           },
           PcapBlockOwned::NG(_) => unreachable!(),
         }
