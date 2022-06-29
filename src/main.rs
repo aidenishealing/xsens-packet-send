@@ -3,6 +3,8 @@ use pcap_parser::*;
 use pcap_parser::traits::PcapReaderIterator;
 use std::fs::File;
 
+
+#[tokio::main]
 pub fn main() {
   old_format();
 
@@ -14,17 +16,26 @@ pub fn old_format() {
   let file = File::open(path).unwrap();
   let mut num_blocks = 0;
   let mut reader = LegacyPcapReader::new(65536, file).expect("LegacyPcapReader");
+
+
+
+
+
+  
   loop {
     match reader.next() {
       Ok((offset, block)) => {
-        println!("got new block");
+        //println!("got new block");
         num_blocks += 1;
+
         match block {
-          PcapBlockOwned::LegacyHeader(_hdr) => {
+          PcapBlockOwned::LegacyHeader(header) => {
             // save hdr.network (linktype)
+            println!("Header: {:?}", header)
           },
-          PcapBlockOwned::Legacy(_b) => {
+          PcapBlockOwned::Legacy(block) => {
             // use linktype to parse b.data()
+            //println!("Block: {:?}", block)
           },
           PcapBlockOwned::NG(_) => unreachable!(),
         }

@@ -11,3 +11,4 @@ src = "src/main.rs"
 
 [dependencies]
 pcap-parser = "0.14.0"
+tokio = { version = "1", features = ["full"] }
