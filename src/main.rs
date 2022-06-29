@@ -2,26 +2,30 @@
 use pcap_parser::*;
 use pcap_parser::traits::PcapReaderIterator;
 use std::fs::File;
+use tokio::net::UdpSocket;
 
+use anyhow::Result as AnyhowResult;
 
 #[tokio::main]
-pub fn main() {
-  old_format();
+pub async fn main() -> AnyhowResult<()> {
+  old_format().await?;
 
+  Ok(())
 }
 
-pub fn old_format() {
+pub async fn old_format() -> AnyhowResult<()> {
 
   let path = "anim.pcap";
   let file = File::open(path).unwrap();
   let mut num_blocks = 0;
   let mut reader = LegacyPcapReader::new(65536, file).expect("LegacyPcapReader");
 
+  let sock = UdpSocket::bind("0.0.0.0:8022").await?;
+
+  let remote_addr = "192.168.50.31:9763";
+  sock.connect(remote_addr).await?;
 
 
-
-
-  
   loop {
     match reader.next() {
       Ok((offset, block)) => {
@@ -36,6 +40,8 @@ pub fn old_format() {
           PcapBlockOwned::Legacy(block) => {
             // use linktype to parse b.data()
             //println!("Block: {:?}", block)
+
+            let len = sock.send(&block.data).await?;
           },
           PcapBlockOwned::NG(_) => unreachable!(),
         }
@@ -50,7 +56,9 @@ pub fn old_format() {
   }
   println!("num_blocks: {}", num_blocks);
 
+  Ok(())
 }
+
 pub fn new_format() {
   println!("Test");
 
