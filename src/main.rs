@@ -54,7 +54,7 @@ pub async fn old_format() -> AnyhowResult<()> {
             let slice = &block.data[32..];
             let len = sock.send(slice).await?;
 
-            tokio::time::sleep(Duration::from_millis(30)).await;
+            tokio::time::sleep(Duration::from_millis(10)).await;
 
             println!("Sent: {}", len);
           },
