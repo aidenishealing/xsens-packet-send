@@ -2,6 +2,7 @@
 use pcap_parser::*;
 use pcap_parser::traits::PcapReaderIterator;
 use std::fs::File;
+use std::time::Duration;
 use tokio::net::UdpSocket;
 
 use anyhow::Result as AnyhowResult;
@@ -16,6 +17,8 @@ pub async fn main() -> AnyhowResult<()> {
 pub async fn old_format() -> AnyhowResult<()> {
 
   let path = "anim.pcap";
+  let path = "capture2.pcap";
+
   let file = File::open(path).unwrap();
   let mut num_blocks = 0;
   let mut reader = LegacyPcapReader::new(65536, file).expect("LegacyPcapReader");
@@ -42,13 +45,16 @@ pub async fn old_format() -> AnyhowResult<()> {
           },
           PcapBlockOwned::Legacy(block) => {
             // use linktype to parse b.data()
-            //println!("Block: {:?}", block)
+            println!("Block: {:?}", block);
 
 
             //let len = sock.recv(&mut buf).await?;
             //println!("{:?} bytes received from {:?}", len, remote_addr);
 
-            let len = sock.send(&block.data).await?;
+            let slice = &block.data[32..];
+            let len = sock.send(slice).await?;
+
+            tokio::time::sleep(Duration::from_millis(30)).await;
 
             println!("Sent: {}", len);
           },
