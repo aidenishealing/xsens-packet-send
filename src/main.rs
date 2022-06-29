@@ -1,38 +1,34 @@
+//! Send "Unreal LiveLink" network packets that were recorded from Xsens Animate
+//! This should help bypass XSens ridiculous software.
 
+use anyhow::Result as AnyhowResult;
 use pcap_parser::*;
 use pcap_parser::traits::PcapReaderIterator;
 use std::fs::File;
 use std::time::Duration;
 use tokio::net::UdpSocket;
 
-use anyhow::Result as AnyhowResult;
+const LOCAL_ADDR : &'static str = "0.0.0.0:8022";
+const REMOTE_ADDR : &'static str = "192.168.50.31:9763";
 
 #[tokio::main]
 pub async fn main() -> AnyhowResult<()> {
   old_format().await?;
-
   Ok(())
 }
 
 pub async fn old_format() -> AnyhowResult<()> {
+  let path = "animation.pcap";
+  let file = File::open(path)?;
 
-  let path = "anim.pcap";
-  let path = "capture2.pcap";
-
-  let file = File::open(path).unwrap();
   let mut num_blocks = 0;
-  let mut reader = LegacyPcapReader::new(65536, file).expect("LegacyPcapReader");
+  let mut reader = LegacyPcapReader::new(65536, file)?;
 
-  let sock = UdpSocket::bind("0.0.0.0:8022").await?;
+  let sock = UdpSocket::bind(LOCAL_ADDR).await?;
 
-  let remote_addr = "192.168.50.31:9763";
-  sock.connect(remote_addr).await?;
-
+  sock.connect(REMOTE_ADDR).await?;
 
   loop {
-
-    let mut buf = [0; 1024];
-
     match reader.next() {
       Ok((offset, block)) => {
         //println!("got new block");
@@ -45,18 +41,14 @@ pub async fn old_format() -> AnyhowResult<()> {
           },
           PcapBlockOwned::Legacy(block) => {
             // use linktype to parse b.data()
-            println!("Block: {:?}", block);
-
-
-            //let len = sock.recv(&mut buf).await?;
-            //println!("{:?} bytes received from {:?}", len, remote_addr);
+            //println!("Block: {:?}", block);
 
             let slice = &block.data[32..];
             let len = sock.send(slice).await?;
+            //println!("Sent: {}", len);
 
-            tokio::time::sleep(Duration::from_millis(10)).await;
+            tokio::time::sleep(Duration::from_millis(5)).await;
 
-            println!("Sent: {}", len);
           },
           PcapBlockOwned::NG(_) => unreachable!(),
         }
@@ -72,62 +64,4 @@ pub async fn old_format() -> AnyhowResult<()> {
   println!("num_blocks: {}", num_blocks);
 
   Ok(())
-}
-
-pub fn new_format() {
-  println!("Test");
-
-  //let path = "anim.pcap";
-  let path = "anim.pcapng";
-
-  let file = File::open(path).unwrap();
-  let mut num_blocks = 0;
-  let capacity = 199999999;
-  let mut reader = PcapNGReader::new(capacity, file).expect("PcapNGReader");
-  let mut if_linktypes = Vec::new();
-  loop {
-    match reader.next() {
-      Ok((offset, block)) => {
-        println!("got new block");
-        num_blocks += 1;
-        match block {
-          PcapBlockOwned::NG(Block::SectionHeader(ref _shb)) => {
-            // starting a new section, clear known interfaces
-            if_linktypes = Vec::new();
-          },
-          PcapBlockOwned::NG(Block::InterfaceDescription(ref idb)) => {
-            if_linktypes.push(idb.linktype);
-          },
-          PcapBlockOwned::NG(Block::EnhancedPacket(ref epb)) => {
-            assert!((epb.if_id as usize) < if_linktypes.len());
-            let linktype = if_linktypes[epb.if_id as usize];
-            #[cfg(feature="data")]
-                let res = pcap_parser::data::get_packetdata(epb.data, linktype, epb.caplen as usize);
-          },
-          PcapBlockOwned::NG(Block::SimplePacket(ref spb)) => {
-            assert!(if_linktypes.len() > 0);
-            let linktype = if_linktypes[0];
-            let blen = (spb.block_len1 - 16) as usize;
-            #[cfg(feature="data")]
-                let res = pcap_parser::data::get_packetdata(spb.data, linktype, blen);
-          },
-          PcapBlockOwned::NG(_) => {
-            // can be statistics (ISB), name resolution (NRB), etc.
-            eprintln!("unsupported block");
-          },
-          PcapBlockOwned::Legacy(_)
-          | PcapBlockOwned::LegacyHeader(_) => unreachable!(),
-        }
-        reader.consume(offset);
-      },
-      Err(PcapError::Eof) => break,
-      Err(PcapError::Incomplete) => {
-        eprintln!("Could not read complete data block.");
-        eprintln!("Hint: the reader buffer size may be too small, or the input file nay be truncated.");
-        break;
-      },
-      Err(e) => panic!("error while reading: {:?}", e),
-    }
-  }
-  println!("num_blocks: {}", num_blocks);
 }
