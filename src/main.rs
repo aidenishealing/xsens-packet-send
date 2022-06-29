@@ -13,42 +13,39 @@ const REMOTE_ADDR : &'static str = "192.168.50.31:9763";
 
 #[tokio::main]
 pub async fn main() -> AnyhowResult<()> {
-  old_format().await?;
+  let socket = UdpSocket::bind(LOCAL_ADDR).await?;
+  socket.connect(REMOTE_ADDR).await?;
+
+  loop {
+    play_legacy_pcap_file_format(&socket).await?;
+    tokio::time::sleep(Duration::from_millis(500)).await;
+  }
+
   Ok(())
 }
 
-pub async fn old_format() -> AnyhowResult<()> {
+pub async fn play_legacy_pcap_file_format(socket: &UdpSocket) -> AnyhowResult<()> {
   let path = "animation.pcap";
   let file = File::open(path)?;
 
   let mut num_blocks = 0;
   let mut reader = LegacyPcapReader::new(65536, file)?;
 
-  let sock = UdpSocket::bind(LOCAL_ADDR).await?;
-
-  sock.connect(REMOTE_ADDR).await?;
-
   loop {
     match reader.next() {
       Ok((offset, block)) => {
-        //println!("got new block");
         num_blocks += 1;
 
         match block {
           PcapBlockOwned::LegacyHeader(header) => {
-            // save hdr.network (linktype)
-            println!("Header: {:?}", header)
           },
           PcapBlockOwned::Legacy(block) => {
-            // use linktype to parse b.data()
-            //println!("Block: {:?}", block);
-
+            // NB(brandon): The first 32 bytes seem to be the UDP packet metadata.
             let slice = &block.data[32..];
-            let len = sock.send(slice).await?;
+            let len = socket.send(slice).await?;
             //println!("Sent: {}", len);
 
             tokio::time::sleep(Duration::from_millis(5)).await;
-
           },
           PcapBlockOwned::NG(_) => unreachable!(),
         }
@@ -61,7 +58,7 @@ pub async fn old_format() -> AnyhowResult<()> {
       Err(e) => panic!("error while reading: {:?}", e),
     }
   }
-  println!("num_blocks: {}", num_blocks);
 
+  println!("num_blocks: {}", num_blocks);
   Ok(())
 }
