@@ -9,7 +9,8 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 
 const LOCAL_ADDR : &'static str = "0.0.0.0:8022";
-const REMOTE_ADDR : &'static str = "192.168.50.31:9763";
+//const REMOTE_ADDR : &'static str = "192.168.50.31:9763";
+const REMOTE_ADDR : &'static str = "127.0.0.1:9763";
 
 #[tokio::main]
 pub async fn main() -> AnyhowResult<()> {
