@@ -35,26 +35,15 @@ Program options
 
 You can supply arguments to change the recorded packet capture animation:
 
-```
-cargo run -- --file name_of_animation.pcap
-```
-
-Or, if compiled as a release binary, 
-
-```
-xsens-packet-send.exe --file name_of_animation.pcap
-```
+* Debug: `cargo run -- --file name_of_animation.pcap`
+* Release build: `xsens-packet-send.exe --file name_of_animation.pcap`
 
 You can also change the computer you target:
 
-```
-cargo run -- --host 192.168.2.100:8000
-```
+* Debug: `cargo run -- --host 192.168.2.100:8000`
+* Release build: `xsens-packet-send.exe --host 192.168.2.100:8000`
 
-Or, if compiled as a release binary,
+You can combine both arguments together:
 
-```
-xsens-packet-send.exe --host 192.168.2.100:8000
-```
-
-You can combine both arguments together.
+* Debug: `cargo run -- --file animation.pcap --host 192.168.2.100:8000`
+* Release build: `xsens-packet-send.exe --file animation.pcap --host 192.168.2.100:8000`
