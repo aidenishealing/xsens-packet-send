@@ -33,6 +33,9 @@ Running the program on Windows
 Program options
 ---------------
 
+By default, the program plays packets to localhost from "three_dancers_animation.pcap", 
+but it can read other files and send to other machines as well.
+
 You can supply arguments to change the recorded packet capture animation:
 
 * Debug: `cargo run -- --file name_of_animation.pcap`
