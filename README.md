@@ -18,14 +18,43 @@ Windows installation
 Running the program on Windows
 ------------------------------
 
-1. Open `cmd` (command line) or `PowerShell.exe`. 
+1. Open `cmd` (command line) or `PowerShell.exe` using the run menu. 
 
 2. Use `cd` ("change directory") to find the location of the program. 
    `dir` can be used to see the current directory contents.
+   eg., `cd C:\Path\To\Program`
 
-3. Type `cargo run` to run the program in debug mode (fast compile, slow execution). 
+4. Type `cargo run` to run the program in debug mode (fast compile, slow execution). 
    Ctrl-C will kill the program without needing to close the terminal.
 
-4. Type `cargo build --release` to build a production `.exe` binary file that will run
+5. Type `cargo build --release` to build a production `.exe` binary file that will run
    six times faster. The exe file will be under the subdirectory `target/release/`.
 
+Program options
+---------------
+
+You can supply arguments to change the recorded packet capture animation:
+
+```
+cargo run -- --file name_of_animation.pcap
+```
+
+Or, if compiled as a release binary, 
+
+```
+xsens-packet-send.exe --file name_of_animation.pcap
+```
+
+You can also change the computer you target:
+
+```
+cargo run -- --host 192.168.2.100:8000
+```
+
+Or, if compiled as a release binary,
+
+```
+xsens-packet-send.exe --host 192.168.2.100:8000
+```
+
+You can combine both arguments together.
